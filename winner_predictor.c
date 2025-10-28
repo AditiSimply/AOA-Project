@@ -2,78 +2,98 @@
 #include <stdlib.h>
 #include <time.h>
 
-#define N 128   // no. of players
-
-typedef struct 
-{
+typedef struct {
+    char name[10];
     int score;
-    int defeated[10]; // at most log2(128) = 7 opponents
-    int count;        // no. of defeated players
 } Player;
 
-int tournament(Player players[], int n, int *comparisons) 
-{
-    int indices[N];
-    for (int i = 0; i < n; i++) 
-    {
-        indices[i] = i;
+// Function to simulate a match between two players
+Player play_match(Player p1, Player p2, Player *runner_up) {
+    printf("%s (%d) vs %s (%d)\n", p1.name, p1.score, p2.name, p2.score);
+    Player winner, loser;
+
+    if (p1.score > p2.score) {
+        winner = p1;
+        loser = p2;
+    } else {
+        winner = p2;
+        loser = p1;
     }
 
-    int size = n;
-    while (size > 1) 
-    {
-        int newSize = 0;
-        for (int i = 0; i < size; i += 2) 
-        {
-            (*comparisons)++;
-            int a = indices[i];
-            int b = indices[i+1];
+    printf("Winner advancing: %s (%d)\n\n", winner.name, winner.score);
 
-            if (players[a].score > players[b].score) 
-            {
-                players[a].defeated[players[a].count++] = players[b].score;
-                indices[newSize++] = a;
-            } 
-            else 
-            {
-                players[b].defeated[players[b].count++] = players[a].score;
-                indices[newSize++] = b;
-            }
-        }
-        size = newSize;
-    }
-    return indices[0];  // index of winner
+    // Track the runner-up as the last player to lose in the final round
+    *runner_up = loser;
+
+    return winner;
 }
 
-void main() 
-{
-    Player players[N];
-    int comparisons = 0;
+// Function to simulate the entire tournament
+void run_tournament(Player players[], int num_players) {
+    int round = 1;
+    Player runner_up;  // To store final runner-up
 
-    srand(time(NULL));  //random generator
-    system("cls");
+    while (num_players > 1) {
+        printf("\n=== ROUND %d ===\n\n", round);
+        Player next_round[num_players / 2];
+        int j = 0;
 
-    // assign random scores to all 128 players
-    for (int i = 0; i < N; i++) 
-    {
-        players[i].score = rand() % 101; // random score between 0-100
-        players[i].count = 0;             // initialize defeated list
-    }
-
-    // run the tournament
-    int winnerIndex = tournament(players, N, &comparisons);
-
-    //the best among all players the winner defeated is runnerup
-    int runnerUpScore = -1;
-    for (int i = 0; i < players[winnerIndex].count; i++) 
-    {
-        if (players[winnerIndex].defeated[i] > runnerUpScore) 
-        {
-            runnerUpScore = players[winnerIndex].defeated[i];
+        // Pair players and decide winners
+        for (int i = 0; i < num_players; i += 2) {
+            printf("Round %d Match:\n", round);
+            // Pass address of runner_up — it will be updated in the final match
+            next_round[j++] = play_match(players[i], players[i + 1], &runner_up);
         }
+
+        // Show advancing players
+        printf("=== ROUND %d ADVANCING PLAYERS ===\n", round);
+        for (int i = 0; i < j; i++) {
+            printf("%s (%d)\n", next_round[i].name, next_round[i].score);
+        }
+
+        printf("\n--- End of Round %d ---\n", round);
+        printf("Players advancing to next round: %d\n", j);
+        getchar(); // Pause
+
+        // Move winners to next round
+        for (int i = 0; i < j; i++) {
+            players[i] = next_round[i];
+        }
+
+        num_players = j;
+        round++;
     }
 
-    printf("Winner score: %d\n", players[winnerIndex].score);
-    printf("Runner-up score: %d\n", runnerUpScore);
-    printf("Total comparisons: %d\n", comparisons + players[winnerIndex].count);
+    printf("\n=============================\n");
+    printf(" WINNER: %s (Score: %d)\n", players[0].name, players[0].score);
+    printf(" RUNNER-UP: %s (Score: %d)\n", runner_up.name, runner_up.score);
+    printf("=============================\n");
+}
+
+int main() {
+    srand(time(NULL));
+    int num_players;
+
+    printf("Enter number of players (must be a power of 2): ");
+    scanf("%d", &num_players);
+    getchar(); // clear input buffer
+
+    Player players[num_players];
+
+    // Assign random scores and player names
+    for (int i = 0; i < num_players; i++) {
+        sprintf(players[i].name, "P%03d", i + 1);
+        players[i].score = rand() % 81 + 20; // random score between 20–100
+    }
+
+    printf("\n=== INITIAL PLAYERS (%d total) ===\n", num_players);
+    for (int i = 0; i < num_players; i++) {
+        printf("%s (%d)\n", players[i].name, players[i].score);
+    }
+
+    printf("\nPress Enter to start the tournament...");
+    getchar();
+
+    run_tournament(players, num_players);
+    return 0;
 }
