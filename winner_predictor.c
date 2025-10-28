@@ -13,7 +13,7 @@ Player maxPlayer(Player a, Player b) {
     return (a.score >= b.score) ? a : b;
 }
 
-/*  return highest among three players */
+/* return highest among three players */
 Player maxOfThree(Player a, Player b, Player c) {
     Player m = maxPlayer(a, b);
     return maxPlayer(m, c);
@@ -148,4 +148,5 @@ int main() {
     free(original);
     return 0;
 }
+
 
